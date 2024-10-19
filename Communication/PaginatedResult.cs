@@ -1,13 +1,13 @@
-﻿namespace PB.BaseResult.DTO
+﻿namespace PB.BaseResult.Communication
 {
-    public class PaginationFilterDTO
+    public class PaginatedResult
     {
-        public PaginationFilterDTO()
+        public PaginatedResult()
         {
             PageSize = 10;
             PageNumber = 1;
         }
-        public PaginationFilterDTO(int? pageSize = null, int? pageNumber = null)
+        public PaginatedResult(int? pageSize = null, int? pageNumber = null)
         {
             PageSize = pageSize ?? 10;
             PageNumber = pageNumber ?? 1;

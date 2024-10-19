@@ -1,18 +1,19 @@
 ﻿namespace PB.BaseResult.Communication
 {
-    public class PagedResult<T> : Result<IEnumerable<T>>
+    public class PagedResult<T>
     {
-        public int PageNumber { get; set; }
-        public int PageSize { get; set; }
-        public int TotalPages { get; set; }
-        public bool HasData { get; set; }
+        public int PageNumber { get; }
+        public int PageSize { get; }
+        public int TotalPages { get; }
+        public bool HasData => Items.Any();
+        public IEnumerable<T> Items { get; }
 
-        public PagedResult(IEnumerable<T> data,int totalPages, int pageNumber, int pageSize) : base(data, null)
+        public PagedResult(IEnumerable<T> items, int totalPages, int pageNumber, int pageSize)
         {
-            this.PageNumber = pageNumber;
-            this.TotalPages = totalPages;
-            this.PageSize = pageSize;
-            this.HasData = data.Any();
+            Items = items;
+            TotalPages = totalPages;
+            PageNumber = pageNumber;
+            PageSize = pageSize;
         }
     }
 }

@@ -10,19 +10,19 @@ namespace PB.BaseResult.Controllers
     {
         private readonly List<ProdutoDTO> _produtos = new()
         {
-            new ProdutoDTO { codigo = 1, Nome = "Produto A", Marca = "Marca X" },
-            new ProdutoDTO { codigo = 2, Nome = "Produto B", Marca = "Marca Y" },
-            new ProdutoDTO { codigo = 3, Nome = "Produto C", Marca = "Marca X" },
-            new ProdutoDTO { codigo = 4, Nome = "Produto D", Marca = "Marca Z" },
-            new ProdutoDTO { codigo = 5, Nome = "Produto E", Marca = "Marca Y" }
+            new ProdutoDTO { Codigo = 1, Nome = "Produto A", Marca = "Marca X" },
+            new ProdutoDTO { Codigo = 2, Nome = "Produto B", Marca = "Marca Y" },
+            new ProdutoDTO { Codigo = 3, Nome = "Produto C", Marca = "Marca X" },
+            new ProdutoDTO { Codigo = 4, Nome = "Produto D", Marca = "Marca Z" },
+            new ProdutoDTO { Codigo = 5, Nome = "Produto E", Marca = "Marca Y" }
         };
 
-        [ProducesResponseType(typeof(Result<PagedResult<string>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(Result<PagedResult<ProdutoDTO>>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [HttpGet("get-by-filter-async")]
-        public IActionResult GetPagedProducts([FromQuery] PaginationFilterDTO paginationFilter)
+        public IActionResult GetPagedProducts([FromQuery] PaginatedResult paginationFilter)
         {
             try
             {
@@ -37,23 +37,28 @@ namespace PB.BaseResult.Controllers
                     .Take(pageSize)
                     .ToList();
 
-                if (!pagedData.Any())
+                var pagedResult = new PagedResult<ProdutoDTO>(pagedData, totalPages, pageNumber, pageSize);
+                if (!pagedResult.HasData)
                 {
-                    var noDataResponse = new Result<string>(
-                        new Message("Nenhum produto encontrado")
-                    );
-                    return NotFound(noDataResponse);
+                    return Ok(Result<PagedResult<ProdutoDTO>>.Fail(
+                        "Nenhum produto encontrado.",
+                        MessageTypeEnum.INFO
+                    ));
                 }
 
-                var response = new PagedResult<ProdutoDTO>(pagedData, totalPages, pageNumber, pageSize);
-                return Ok(response);
+                return Ok(Result<PagedResult<ProdutoDTO>>.Success(
+                    pagedResult,
+                    "Produtos recuperados com sucesso."
+                ));
             }
             catch (Exception ex)
             {
-                var errorResponse = new Result<string>(
-                    new Message($"Erro ao recuperar produtos: {ex.Message}")
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    Result<string>.Fail(
+                        $"Erro ao recuperar produtos: {ex.Message}",
+                        MessageTypeEnum.ERROR
+                    )
                 );
-                return StatusCode(500, errorResponse);
             }
         }
 
@@ -63,32 +68,30 @@ namespace PB.BaseResult.Controllers
         {
             try
             {
-                var produto = _produtos.FirstOrDefault(p => p.Nome.Equals(nome, StringComparison.OrdinalIgnoreCase));
+                if (string.IsNullOrWhiteSpace(nome))
+                    return BadRequest(Result<string>.Fail("O nome do produto não pode ser vazio ou nulo.", MessageTypeEnum.WARNING));
+
+                var produto = _produtos.FirstOrDefault(p =>
+                    p.Nome.Equals(nome, StringComparison.OrdinalIgnoreCase));
 
                 if (produto == null)
+                    return NotFound(Result<string>.Fail($"Produto '{nome}' não encontrado.", MessageTypeEnum.INFO));
+
+                var produtoDTO = new ProdutoDTO
                 {
-                    var notFoundResponse = new Result<string>(
-                        new Message($"Produto '{nome}' não encontrado")
-                    );
-                    return NotFound(notFoundResponse);
-                }
+                    Codigo = produto.Codigo,
+                    Nome = produto.Nome,
+                    Marca = produto.Marca
+                };
 
-                var successResponse = new Result<ProdutoDTO>(produto, new Message("Produto encontrado com sucesso"));
-
-
-
-                return Ok(successResponse);
+                return Ok(Result<ProdutoDTO>.Success("Produto encontrado com sucesso."));
             }
             catch (Exception ex)
             {
-                var errorResponse = new Result<string>(
-                    new Message($"Erro ao recuperar o produto: {ex.Message}")
-                );
-                return StatusCode(500, errorResponse);
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    Result<string>.Fail($"Erro ao recuperar o produto: {ex.Message}", MessageTypeEnum.ERROR));
             }
         }
+
     }
-
-
-
 }
